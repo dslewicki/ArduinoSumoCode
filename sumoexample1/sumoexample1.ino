@@ -15,7 +15,7 @@ https://github.com/pennstateroboticsclub/arduinosumo/tree/master/sumoexample1
 //import the NewPing library by Tim Eckel for use with the ultrasonic sensor
 #include <NewPing.h>  
 
-//define ultrasonic sensor or limit switches by their connected digital pin number
+//define ultrasonic sensor by their connected digital pin number
 const int TRIG = -3;     
 const int ECHO = -3;
 const int MAX_DISTANCE = -3;
@@ -35,12 +35,12 @@ bool justsaw = false;
 
 //make ultrasonic sensor object to find its distance later 
 NewPing sonar(TRIG, ECHO, MAX_DISTANCE);   
-                          
+
 void setup() {
   //set serial communication rate
   Serial.begin(115200);
-    
-  //define Motor Control as an output
+
+  //define motor control as an output
   pinMode(MOTOR_A1, OUTPUT);
   pinMode(MOTOR_A2, OUTPUT);
   pinMode(MOTOR_B1, OUTPUT);
