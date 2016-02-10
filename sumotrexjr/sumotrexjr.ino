@@ -29,9 +29,10 @@ const int MAX_DISTANCE = 200;
 NewPing sonar(TRIG, ECHO, MAX_DISTANCE);
 
 //timing pause lengths for a smoother and more accurate movement
-const int threshold = 180;
-const int forwarddelay = 50;
-const int turndelay = 400;
+const int threshold = 50;
+const int forwarddelay = 1000;
+const int turndelay = 300;
+const int spindelay = 100;
 
 //variables to store opponent position information
 int distance = 0;
@@ -44,9 +45,6 @@ const int TX = 8;
 //make serial object to communicate with the TReX Jr
 SoftwareSerial trexSerial(RX, TX);
 
-//holds the data to be written to the TReX Jr
-char data[4];
-
 void setup() {
   //set serial communication rate for serial monitor
   Serial.begin(115200);
@@ -55,9 +53,10 @@ void setup() {
   
   //set serial communication rate for the TReX Jr
   trexSerial.begin(19200);
-  delay(3950);
   
   //standard 5 second sumo time start delay to allow for humans to back away
+  delay(3950);
+
 }
 
 
@@ -73,41 +72,34 @@ void loop() {
     trexSerial.write(0xC6);
     trexSerial.write(0x7F);
     //write motor 1 forward to TReX Jr
-    for (char d = 0; d < 2; d++) {
-        trexSerial.write(data[d]);
-    }
     
     delay(10);
     
     trexSerial.write(0xCE);
     trexSerial.write(0x7F);
     //write motor 2 forward to TReX Jr
-    for (char d = 0; d < 2; d++) {
-        trexSerial.write(data[d]);
-    }
     
     //changes the state of whether or not the robot just saw its opponent to yes
     justsaw = true;
+    
+    delay(forwarddelay);
   }
+  
   else if (justsaw) {
   //just lost sight of the opponent
     //turns left for a short duration to estimate if the opponent went left
     
+    //write motor 1 backward to TReX Jr
     trexSerial.write(0xC5);
     trexSerial.write(0x7F);
-    //write motor 1 backward to TReX Jr
-    for (char d = 0; d < 2; d++) {
-        trexSerial.write(data[d]);
-    }
     
     delay(10);
     
+    //write motor 2 forward to TReX Jr
     trexSerial.write(0xCE);
     trexSerial.write(0x7F);
-    //write motor 2 forward to TReX Jr
-    for (char d = 0; d < 2; d++) {
-        trexSerial.write(data[d]);
-    }
+    
+    justsaw = false;
     
     delay(turndelay);
   }
@@ -115,21 +107,17 @@ void loop() {
   else {
   //assume the opponent when right so spin right until the opponent is found
   
+    //write motor 1 forward to TReX Jr
     trexSerial.write(0xC6);
     trexSerial.write(0x7F);
-    //write motor 1 forward to TReX Jr
-    for (char d = 0; d < 2; d++) {
-        trexSerial.write(data[d]);
-    }
     
     delay(10);
     
+    //write motor 2 backward to TReX Jr
     trexSerial.write(0xCD);
     trexSerial.write(0x7F);
-    //write motor 2 backward to TReX Jr
-    for (char d = 0; d < 2; d++) {
-        trexSerial.write(data[d]);
-    }
+    
+    delay(spindelay);
     
   }
 }
