@@ -14,49 +14,49 @@
  https://github.com/pennstateroboticsclub/arduinosumo/tree/master/sumotrexjr
  */
 
-//import the NewPing library by Tim Eckel for use with the ultrasonic sensor
 #include <NewPing.h>
-
-//import the serial library for use with the serial controlled Pololu motor controller
 #include <SoftwareSerial.h>
 
-//define ultrasonic sensor by their connected digital pin number
-const int TRIG = 2;     
-const int ECHO = 3;
-const int MAX_DISTANCE = 200;
+//pins for the ultrasonic ping sensor
+#define TRIG 2
+#define ECHO 3
+#define MAX_DISTANCE 200
+
+//serial pins for TReX Jr control
+#define RX 7
+#define TX 8
 
 //make ultrasonic sensor object to find its distance later 
 NewPing sonar(TRIG, ECHO, MAX_DISTANCE);
+
+//make serial object to communicate with the TReX Jr
+SoftwareSerial trexSerial(RX, TX);
 
 //timing pause lengths for a smoother and more accurate movement
 const int threshold = 50;
 const int forwarddelay = 1000;
 const int turndelay = 300;
-const int spindelay = 100;
+const int writeddelay = 10;
 
-//variables to store opponent position information
 int distance = 0;
 bool justsaw = false;
-
-//define serial pins for TReX Jr control
-const int RX = 7;
-const int TX = 8;
-
-//make serial object to communicate with the TReX Jr
-SoftwareSerial trexSerial(RX, TX);
+unsigned long t = 0;
 
 void setup() {
-  //set serial communication rate for serial monitor
+  
+  //communication rate for serial monitor
   Serial.begin(115200);
   
   delay(1000);
   
-  //set serial communication rate for the TReX Jr
+  //default ommunication rate for the TReX Jr
   trexSerial.begin(19200);
   
-  //standard 5 second sumo time start delay to allow for humans to back away
+  //5 second sumo time start delay to allow for humans to back away
   delay(3950);
-
+  
+  //get held timing when the program starts
+  t = millis();
 }
 
 
@@ -73,7 +73,7 @@ void loop() {
     trexSerial.write(0x7F);
     //write motor 1 forward to TReX Jr
     
-    delay(10);
+    delay(writeddelay);
     
     trexSerial.write(0xCE);
     trexSerial.write(0x7F);
@@ -93,7 +93,7 @@ void loop() {
     trexSerial.write(0xC5);
     trexSerial.write(0x7F);
     
-    delay(10);
+    delay(writeddelay);
     
     //write motor 2 forward to TReX Jr
     trexSerial.write(0xCE);
@@ -101,7 +101,17 @@ void loop() {
     
     justsaw = false;
     
-    delay(turndelay);
+    //updates held timing to current timing
+    t = millis();
+    
+    //uses millis to prevent the complete pause by delay
+    while(millis() - t <= turndelay) {
+      
+      if (distance <= threshold && distance != 0) {
+        //breaks the turn early if sees the opponent again
+        break;
+      }
+    }
   }
   
   else {
@@ -111,13 +121,12 @@ void loop() {
     trexSerial.write(0xC6);
     trexSerial.write(0x7F);
     
-    delay(10);
+    delay(writeddelay);
     
     //write motor 2 backward to TReX Jr
     trexSerial.write(0xCD);
     trexSerial.write(0x7F);
     
-    delay(spindelay);
-    
+    delay(writeddelay);
   }
 }
