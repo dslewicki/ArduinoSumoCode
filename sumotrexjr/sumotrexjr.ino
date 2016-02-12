@@ -17,7 +17,7 @@
 #include <NewPing.h>
 #include <SoftwareSerial.h>
 
-//pins for the ultrasonic ping sensor
+//pins for the ping sensor
 #define TRIG 2
 #define ECHO 3
 #define MAX_DISTANCE 200
@@ -26,17 +26,17 @@
 #define RX 7
 #define TX 8
 
-//make ultrasonic sensor object to find its distance later 
+//make sensor object to find its distance later 
 NewPing sonar(TRIG, ECHO, MAX_DISTANCE);
 
 //make serial object to communicate with the TReX Jr
 SoftwareSerial trexSerial(RX, TX);
 
 //timing pause lengths for a smoother and more accurate movement
-const int threshold = 50;
+const int threshold = 150;
 const int forwarddelay = 1000;
 const int turndelay = 300;
-const int writeddelay = 10;
+const int writedelay = 10;
 
 int distance = 0;
 bool justsaw = false;
@@ -49,7 +49,7 @@ void setup() {
   
   delay(1000);
   
-  //default ommunication rate for the TReX Jr
+  //default communication rate for the TReX Jr
   trexSerial.begin(19200);
   
   //5 second sumo time start delay to allow for humans to back away
@@ -67,44 +67,60 @@ void loop() {
 
   if (distance <= threshold && distance != 0) {
   //sees something in front of it
+  
     //moves forward for forward the delay duration by writing max 127 acceleration value to both motors
-    
+    Serial.println("FORWARD");
+  
+    //write motor 1 forward
     trexSerial.write(0xC6);
     trexSerial.write(0x7F);
-    //write motor 1 forward to TReX Jr
     
-    delay(writeddelay);
+    //delay between TReX Jr commands
+    delay(writedelay);
     
+    //write motor 2 forward
     trexSerial.write(0xCE);
     trexSerial.write(0x7F);
-    //write motor 2 forward to TReX Jr
     
-    //changes the state of whether or not the robot just saw its opponent to yes
+    //the robot just saw its opponent so turn right a little later when the target is lost
     justsaw = true;
-    
-    delay(forwarddelay);
-  }
-  
-  else if (justsaw) {
-  //just lost sight of the opponent
-    //turns left for a short duration to estimate if the opponent went left
-    
-    //write motor 1 backward to TReX Jr
-    trexSerial.write(0xC5);
-    trexSerial.write(0x7F);
-    
-    delay(writeddelay);
-    
-    //write motor 2 forward to TReX Jr
-    trexSerial.write(0xCE);
-    trexSerial.write(0x7F);
-    
-    justsaw = false;
     
     //updates held timing to current timing
     t = millis();
     
     //uses millis to prevent the complete pause by delay
+    while(millis() - t <= forwarddelay) {
+      
+      if (distance >= threshold || distance == 0) {
+        //breaks early if opponent is lost
+        break;     
+      }
+    } 
+  }
+  
+  else if (justsaw) {
+  //just lost sight of the opponent
+  
+    //turns left for a short duration to estimate if the opponent went left
+    Serial.println("LEFT");
+    
+    //write motor 1 backward
+    trexSerial.write(0xC5);
+    trexSerial.write(0x7F);
+    
+    delay(writedelay);
+    
+    //write motor 2 forward
+    trexSerial.write(0xCE);
+    trexSerial.write(0x7F);
+    
+    //resets this state as to not turn continously left
+    justsaw = false;
+    
+    //updates held timing to current timing
+    t = millis();
+    
+    //uses millis to prevent sensor logic pause by delay
     while(millis() - t <= turndelay) {
       
       if (distance <= threshold && distance != 0) {
@@ -115,18 +131,22 @@ void loop() {
   }
   
   else {
-  //assume the opponent when right so spin right until the opponent is found
+  //assume the opponent when right 
+    
+    //spin right until the opponent is found
+    Serial.println("RIGHT");
   
-    //write motor 1 forward to TReX Jr
+    //write motor 1 forward
     trexSerial.write(0xC6);
     trexSerial.write(0x7F);
     
-    delay(writeddelay);
+    delay(writedelay);
     
-    //write motor 2 backward to TReX Jr
+    //write motor 2 backward
     trexSerial.write(0xCD);
     trexSerial.write(0x7F);
     
-    delay(writeddelay);
+    delay(turndelay);
   }
+  
 }
